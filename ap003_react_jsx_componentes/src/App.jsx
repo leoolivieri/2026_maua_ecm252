@@ -10,7 +10,7 @@ const App = () => {
   return <div style={{margin: 'auto', width: 768, backgroundColor: '#eee', padding: 12, borderRadius: 8}}>
     
    
-    <label className = "rotulo" htmlFor="campoNome" style={{marginBottom: 8, display: 'block'}}>{textoDoRotulo} 
+    <label className = "rotulo" htmlFor="campoNome" style={{marginBottom: 8, display: 'block'}}> 
 
     </label>
     {/* input#campoNome */}
