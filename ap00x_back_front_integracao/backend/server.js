@@ -1,3 +1,4 @@
+require( 'dotenv').config()
 const express = require('express');
 const mysql2 = require('mysql2/promise');
 const app = express();
@@ -10,12 +11,14 @@ const conectar = async () => {
     // CORREÇÃO 1: Você precisa do 'await' aqui para esperar o banco responder
     // CORREÇÃO 2: Você precisa atribuir o resultado à variável 'conexao'
     conexao = await mysql2.createConnection({
-      host: 'maua-ecm-252-leoolivieri.e.aivencloud.com',
-      user: 'avnadmin',
-      password: 'AVNS_Kx_spo5yf3V8rw5z34L',
-      database: 'defaultdb',
-      port: 12592,
-      ssl: { rejectUnauthorized: false } // DICA: Aiven geralmente exige SSL para conectar
+      host: process.env.HOST.trim(),
+      user: process.env.USUARIO,
+      password: process.env.PASSWORD,
+      database: process.env.DATABASE,
+      port: process.env.PORT,
+      ssl: {
+        rejectUnauthorized: false
+      }
     });
     
     console.log('Conectado ao MySQL com sucesso!');
