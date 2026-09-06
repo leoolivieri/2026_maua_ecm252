@@ -1,124 +1,109 @@
-const express = require('express');
-const mysql2 = require('mysql2/promise');
-const app = express();
-app.use(express.json());
+require('dotenv').config()
+const express = require('express')
+const mysql2 = require('mysql2/promise')
 
-let conexao; 
+const app = express()
+//middleware 
+app.use(express.json())
+
+let conexao
 
 const conectar = async () => {
-  try {
-    // CORREÇÃO 1: Você precisa do 'await' aqui para esperar o banco responder
-    // CORREÇÃO 2: Você precisa atribuir o resultado à variável 'conexao'
-    conexao = await mysql2.createConnection({
-      host: 'maua-ecm-252-leoolivieri.e.aivencloud.com',
-      user: 'avnadmin',
-      password: 'AVNS_Kx_spo5yf3V8rw5z34L',
-      database: 'defaultdb',
-      port: 12592,
-      ssl: { rejectUnauthorized: false } // DICA: Aiven geralmente exige SSL para conectar
-    });
-    
-    console.log('Conectado ao MySQL com sucesso!');
-  } catch (erro) {
-    console.error('Erro ao conectar ao MySQL:', erro.message);
-  }
-};
-
-conectar();
-
-//fazer uma rota para cadastrar uma tarefa
-//suponha que o cliente vai enviar título e descrição por meio da requisição
-//dica: use req.body
-app.post('/tarefas', async (req, res) => {
-  try {
-    // Desestruturação dos dados vindos do corpo da requisição (JSON) - isso é mais limpo do que acessar req.body.titulo e req.body.descricao
-    const { titulo, descricao } = req.body;
-
-    // Montagem da query SQL usando Template Strings ou concatenação
-    const sql = 'INSERT INTO tarefas (titulo, descricao) VALUES (?, ?)';
-
-    // Execução da query usando Prepared Statements (os "?" evitam SQL Injection)
-    const [resultado] = await conexao.query(sql, [titulo, descricao]);
-
-    // Retorno de sucesso (Status 201: Created)
-    res.status(201).json({
-      id: resultado.insertId,
-      titulo,
-      descricao
-    });
-
-  } catch (erro) {
-    // Tratamento de erro caso algo falhe no banco
-    console.error(erro);
-    res.status(500).json({
-      erro: 'Erro ao criar tarefa'
-    });
-  }
-});
-
-// Obter lista de tarefas
-app.get('/tarefas', async (req, res) => {
-  try {
-    // Proteção: verifica se a conexão existe antes de fazer a query
-    if (!conexao) {
-      return res.status(500).json({ error: "Banco não conectado" });
+    try {
+        conexao = await mysql2.createConnection({
+            host: process.env.HOST,
+            user: process.env.USUARIO,
+            password: process.env.PASSWORD,
+            database: process.env.DATABASE,
+            port: process.env.PORT
+        })
+        console.log('Conectado ao MySQL')
     }
-    
-    const [linhas] = await conexao.query('SELECT * FROM tarefas');
-    res.json(linhas); // Envia o resultado para o cliente
-  } catch (erro) {
-    res.status(500).json({ error: erro.message });
-  }
-});
-
-// ROTA PARA ATUALIZAR (PUT)
-app.put('/tarefas/:id', async (req, res) => { // Adicionado :id
-  try {
-    const { id } = req.params; // Pega o ID da URL
-    const { titulo, descricao } = req.body;
-
-    const sql = 'UPDATE tarefas SET titulo = ?, descricao = ? WHERE id = ?';
-    
-    // A ordem no array deve bater com os "?" no SQL
-    const [resultado] = await conexao.query(sql, [titulo, descricao, id]);
-
-    if (resultado.affectedRows === 0) {
-      return res.status(404).json({ erro: 'Tarefa não encontrada' });
+    catch (erro) {
+        console.log(`Erro ao conectar com o banco: ${erro}`)
     }
 
-    res.status(200).json({ id, titulo, descricao });
-  } catch (erro) {
-    console.error(erro);
-    res.status(500).json({ erro: 'Erro ao atualizar tarefa' });
-  }
-});
+}
+conectar()
 
-// ROTA PARA DELETAR (DELETE)
-app.delete('/tarefas/:id', async (req, res) => { // Adicionado :id
-  try {
-    const { id } = req.params;
-
-    const sql = 'DELETE FROM tarefas WHERE id = ?';
-    const [resultado] = await conexao.query(sql, [id]);
-
-    if (resultado.affectedRows === 0) {
-      return res.status(404).json({ erro: 'Tarefa não encontrada' });
-    }
-
-    res.status(200).json({ mensagem: `Tarefa ${id} removida com sucesso!` });
-  } catch (erro) {
-    console.error(erro);
-    res.status(500).json({ erro: 'Erro ao deletar tarefa' });
-  }
-});
-
-
-
+//Definição dos Endpoints
 app.get('/', (req, res) => {
-  res.json({ message: 'Servidor OK!' });
-});
+    res.json({
+        mensagem: 'Servidor funcionando'
+    })
+})
 
-const port = 3000;
+//obter a lista de tarefas
+app.get('/tarefas', async (req, res) => {
+    try {
+        const SQL = 'SELECT * FROM tb_tarefa'
+        const [linhas] = await conexao.query(SQL) //desestruturou com [linhas]
+        res.json(linhas)
+    }
+    catch (erro) {
+        console.log(erro)
+        res.status(500).json({
+            erro: 'Erro ao buscar as tarefas'
+        })
+    }
+})
+
+//cadastrar uma tarefa
+//suponha que o cliente vai enviar titulo e descricao por meio de uma requisicao
+app.post('/tarefas', async (req, res) => {
+    try {
+        const { titulo, descricao } = req.body
+        const SQL = 'INSERT INTO tb_tarefa (titulo, descricao) VALUES (?, ?)'
+        const [resultado] = await conexao.query(SQL, [titulo, descricao])
+        res.status(201).json({
+            cod_tarefa: resultado.insertId,
+            titulo: titulo,
+            descicao: descricao
+        })
+    }
+    catch (erro) {
+        console.log(erro)
+        res.status(500).json({
+            erro: 'Erro ao cadastrar a tarefa'
+        })
+    }
+})
+
+//rota para atualizar a tarefa
+//suponho que ela inteira será atualizada
+app.put('/tarefas/:id', async (req, res) => {
+    try{
+        const { id } = req.params
+        const { titulo, descricao } = req.body
+        const SQL = 'UPDATE tb_tarefa SET titulo = ?, descricao = ? WHERE cod_tarefa = ?'
+        await conexao.query(SQL, [titulo, descricao, id])
+        res.json({ id, titulo, descricao })
+    }
+    catch(erro){
+        console.log(erro)
+        res.status(500).json({
+            erro: 'Erro ao tentar atualizar uma tarefa'
+        })
+    }
+})
+
+//rota para remover a tarefa
+app.delete('/tarefas/:id', async (req, res) => {
+    try{
+        const { id } = req.params
+        const SQL = 'DELETE FROM tb_tarefa WHERE cod_tarefa = ?'
+        await conexao.query(SQL, [id])
+        res.status(204).send()
+    }
+    catch(erro){
+        console.log(erro)
+        res.status(500).json({
+            erro: 'Erro ao tentar remover uma tarefa'
+        })
+    }
+})
+
+const port = 3000
 app.listen(port, () => {
-  console.log(`Servidor rodando na porta ${port}`);
-});
+    console.log(`Servidor executando na porta: ${port}`)
+})
