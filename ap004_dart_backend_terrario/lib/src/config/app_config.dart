@@ -1,5 +1,7 @@
+import 'dart:developer';
 import 'env.dart';
 
+/// Configuração da aplicação, resolvida uma única vez durante o boot.
 class AppConfig {
   const AppConfig({
     required this.appEnv,
@@ -7,10 +9,10 @@ class AppConfig {
     required this.logLevel,
     required this.dbHost,
     required this.dbPort,
+    required this.dbName,
     required this.dbUser,
     required this.dbPassword,
-    required this.dbName,
-    required this.dbPoolSize,
+    required this.dbPoolSize
   });
 
   final String appEnv;
@@ -24,39 +26,46 @@ class AppConfig {
   final String dbPassword;
   final int dbPoolSize;
 
+  //método getter 
+  /// Verdadeiro quando a aplicação roda em produção; usado para decidir
+  /// o nível de detalhe das mensagens de erro devolvidas ao cliente.
   bool get producao => appEnv == 'production';
 
-  factory AppConfig.fromEnv() {
+
+  /// Constrói a configuração a partir do ambiente e valida os limites.
+  ///
+  /// `factory` é um construtor que não é obrigado a criar uma instância nova:
+  /// ele executa código antes de devolver o objeto e pode retornar um valor
+  /// de cache, uma subclasse ou, como aqui, lançar exceção se algo estiver
+  /// errado. Um construtor comum não permite nada disso, porque seu corpo só
+  /// roda depois que o objeto já existe.
+
+  //construtor nomeado (singleton -> uma instância)
+  factory AppConfig.fromEnv(){
     final config = AppConfig(
       appEnv: Env.opcional('APP_ENV', 'development'),
       serverPort: Env.inteiro('SERVER_PORT', 8080),
       logLevel: Env.opcional('LOG_LEVEL', 'info'),
       dbHost: Env.obrigatoria('DB_HOST'),
-      dbPort: Env.inteiro('DB_PORT', 3306),
+      dbPort: Env.inteiro('DB_PORT', 3307),
       dbName: Env.obrigatoria('DB_NAME'),
-      dbUser: Env.obrigatoria('DB_USER'),
+      dbUser: Env.obrigatoria("DB_USER"),
       dbPassword: Env.obrigatoria('DB_PASSWORD'),
-      dbPoolSize: Env.inteiro('DB_POOL_SIZE', 10),
-    );
-
-    if (config.serverPort < 1 || config.serverPort > 65535) {
-      throw FormatException(
-        'SERVER_PORT deve estar entre 1 e 65535, recebido: ${config.serverPort}',
+      dbPoolSize: Env.inteiro('DB_POOL_SIZE', 10)
       );
+    if(config.serverPort < 1 || config.serverPort > 65535){
+      throw StateError("SERVER_PORT fora da faixa válida: ${config.serverPort}");
     }
-
-    if (config.dbPoolSize < 1) {
-      throw FormatException(
-        'DB_POOL_SIZE deve ser maior que 0, recebido: ${config.dbPoolSize}',
-      );
+    if(config.dbPoolSize < 1){
+      throw StateError("DB_POOL_SIZE deve ser pelo menos 1");
     }
-
     return config;
   }
 
-  /// Representação segura para log: a senha nunca é impressa.
   @override
-  String toString() =>
-      'AppConfig(appEnv: $appEnv, serverPort: $serverPort, '
-      'db: $dbUser@$dbHost:$dbPort/$dbName, pool: $dbPoolSize)';
+  //representação segura para log: a senha nunca é impressa.
+  String toString(){
+    return 'AppConfig(appEnv: $appEnv, serverPort: $serverPort, db: $dbUser@$dbHost:$dbPort/$dbName, pool: $dbPoolSize)';
+  }
+
 }
