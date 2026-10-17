@@ -14,7 +14,6 @@ dependencies:
   shelf_router: ^1.1.4
   shelf_swagger_ui: ^2.0.0
   shelf: ^1.4.0
-  shelf_router: ^1.1.4
 
 dev_dependencies:
   lints: ^6.1.0

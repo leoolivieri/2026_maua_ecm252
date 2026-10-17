@@ -1,5 +1,3 @@
-import 'package:ap004_dart_backend_terrario/ap004_dart_backend_terrario.dart' as ap004_dart_backend_terrario;
-
-void main(List<String> arguments) {
- 
-}
+// Entrypoint gerado pelo `dart create`. Não é usado: o servidor real fica em
+// bin/server.dart. (CORRIGIDO: removido o import que não era usado.)
+void main(List<String> arguments) {}
